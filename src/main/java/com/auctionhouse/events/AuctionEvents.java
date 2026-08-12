@@ -15,19 +15,22 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Retrait de l'argent de l'acheteur
+            // Source de commande de niveau CONSOLE / SERVEUR (Bypasse tous les soucis de permissions)
+            net.minecraft.command.CommandSource consoleSource = server.createCommandSourceStack().withSuppressedOutput();
+
+            // 1. Retrait de l'argent de l'acheteur
             server.getCommands().performCommand(
-                server.createCommandSourceStack(),
+                consoleSource,
                 "balance remove " + nomAcheteur + " " + prix
             );
 
-            // Crédit de l'argent au vendeur
+            // 2. Crédit de l'argent au vendeur
             server.getCommands().performCommand(
-                server.createCommandSourceStack(),
+                consoleSource,
                 "balance add " + vendeur + " " + prix
             );
 
-            acheteur.sendMessage(new StringTextComponent("§aAchat réussi pour " + prix + " $ !"), acheteur.getUUID());
+            acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prix + " $ §aont été prélevés."), acheteur.getUUID());
         }
     }
 
