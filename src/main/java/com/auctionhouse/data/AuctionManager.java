@@ -52,10 +52,9 @@ public class AuctionManager {
         ));
     }
 
-    // Le Container personnalisé qui bloque le vol et exécute la transaction au clic
     public static class AHContainer extends ChestContainer {
         public AHContainer(int id, PlayerInventory playerInv, Inventory inventory) {
-            super(ContainerType.GENERIC_9X6, id, playerInv, inventory, 6);
+            super(ContainerType.GENERIC_9x6, id, playerInv, inventory, 6);
         }
 
         @Override
@@ -79,7 +78,6 @@ public class AuctionManager {
                 return ItemStack.EMPTY;
             }
             
-            // Empêche de prendre l'item normalement dans les autres cases
             return ItemStack.EMPTY;
         }
     }
