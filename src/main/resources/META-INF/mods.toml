@@ -1,14 +1,15 @@
 modLoader="javafml"
 loaderVersion="[36,)"
-issueTrackerURL="https://github.com/Pumko16875k/auction/issues"
 
 [[mods]]
 modId="auctionhouse"
 version="1.0.0"
 displayName="Auction House"
-license="MIT"
+logoFile=""
+credits=""
 authors="Pumko"
-description="Mod d'Hôtel de Ventes pour Forge 1.16.5"
+description="Mod d'Hôtel de Ventes"
+license="MIT"
 
 [[dependencies.auctionhouse]]
     modId="forge"
