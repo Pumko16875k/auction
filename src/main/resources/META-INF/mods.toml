@@ -6,10 +6,9 @@ issueTrackerURL="https://github.com/Pumko16875k/auction/issues"
 modId="auctionhouse"
 version="1.0.0"
 displayName="Auction House"
-logoFile=""
-credits=""
+license="MIT"
 authors="Pumko"
-description="Mod d'Hôtel de Ventes"
+description="Mod d'Hôtel de Ventes pour Forge 1.16.5"
 
 [[dependencies.auctionhouse]]
     modId="forge"
