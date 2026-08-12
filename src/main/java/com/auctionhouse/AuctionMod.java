@@ -1,5 +1,17 @@
 package com.auctionhouse;
 
+import net.minecraftforge.fml.common.Mod;
+
+@Mod("auctionhouse")
+public class AuctionMod {
+    // Cette ligne EXACTEMENT doit être présente :
+    public static final String MOD_ID = "auctionhouse";
+
+    public AuctionMod() {
+        // ton constructeur...
+    }
+}package com.auctionhouse;
+
 import com.auctionhouse.commands.AHCommand;
 import com.auctionhouse.events.AuctionEvents;
 import net.minecraftforge.common.MinecraftForge;
