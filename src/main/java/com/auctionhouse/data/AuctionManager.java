@@ -1,5 +1,6 @@
 package com.auctionhouse.data;
 
+import com.auctionhouse.events.AuctionEvents;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.ChestContainer;
@@ -14,12 +15,14 @@ public class AuctionManager {
 
     public static class Listing {
         public ServerPlayerEntity seller;
+        public String sellerName;
         public ItemStack item;
         public double price;
         public int days;
 
         public Listing(ServerPlayerEntity seller, ItemStack item, double price, int days) {
             this.seller = seller;
+            this.sellerName = seller.getName().getString();
             this.item = item;
             this.price = price;
             this.days = days;
@@ -30,6 +33,28 @@ public class AuctionManager {
 
     public static void addListing(ServerPlayerEntity seller, ItemStack item, double price, int days) {
         activeListings.add(new Listing(seller, item, price, days));
+    }
+
+    public static void buyItem(ServerPlayerEntity buyer, int slot) {
+        if (slot < 0 || slot >= activeListings.size()) {
+            return;
+        }
+
+        Listing listing = activeListings.get(slot);
+
+        // 1. Exécute le transfert d'argent (/balance remove et /balance add)
+        AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
+
+        // 2. Donne l'item acheté au joueur
+        buyer.inventory.add(listing.item.copy());
+
+        // 3. Retire l'item des ventes
+        activeListings.remove(slot);
+
+        buyer.sendMessage(new StringTextComponent("§aVous avez acheté cet item pour " + listing.price + " $ !"), buyer.getUUID());
+        
+        // Rafraîchit l'interface du joueur
+        openGUI(buyer, 0);
     }
 
     public static void openGUI(ServerPlayerEntity player, int page) {
