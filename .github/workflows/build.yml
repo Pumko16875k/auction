@@ -9,8 +9,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '8'
-      - run: chmod +x gradlew
-      - run: ./gradlew build --no-daemon
+      - uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: Mod-JAR
