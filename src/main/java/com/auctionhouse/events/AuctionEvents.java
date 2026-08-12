@@ -5,23 +5,29 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
-
-// Importation directe de l'API d'EconomyInc
-import com.buuz135.economyinc.api.EconomyIncAPI;
 
 public class AuctionEvents {
 
     public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
-        if (acheteur != null) {
-            // 1. On retire l'argent à l'acheteur directement via le mod EconomyInc
-            EconomyIncAPI.removeBalance(acheteur.getUUID(), (decimal) prix);
+        MinecraftServer server = acheteur.getServer();
+        if (server != null) {
+            String nomAcheteur = acheteur.getName().getString();
+            int prixInt = (int) prix;
 
-            // 2. On ajoute l'argent au vendeur s'il est trouvé par son UUID ou nom
-            // Si EconomyInc gère les UUIDs :
-            EconomyIncAPI.addBalance(acheteur.getServer().getProfileCache().get(vendeur).getId(), (decimal) prix);
+            // Utilisation de la source de commande officielle Mojang 1.16.5 avec permission Console (4)
+            server.getCommands().performCommand(
+                server.createCommandSourceStack().withPermission(4),
+                "balance remove " + nomAcheteur + " " + prixInt
+            );
 
-            acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prix + " $ §aretirés de votre compte."), acheteur.getUUID());
+            server.getCommands().performCommand(
+                server.createCommandSourceStack().withPermission(4),
+                "balance add " + vendeur + " " + prixInt
+            );
+
+            acheteur.sendMessage(new StringTextComponent("§aAchat effectué ! §e" + prixInt + " $ §aont été prélevés."), acheteur.getUUID());
         }
     }
 
@@ -31,7 +37,7 @@ public class AuctionEvents {
         CompoundNBT display = tag.contains("display") ? tag.getCompound("display") : new CompoundNBT();
         ListNBT lore = display.contains("Lore") ? display.getList("Lore", 8) : new ListNBT();
 
-        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + prix + " $\",\"italic\":false}"));
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + (int)prix + " $\",\"italic\":false}"));
         lore.add(StringNBT.valueOf("{\"text\":\"§7Vendeur: §b" + vendeur + "\",\"italic\":false}"));
 
         display.put("Lore", lore);
