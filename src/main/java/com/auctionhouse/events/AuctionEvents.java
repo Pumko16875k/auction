@@ -2,10 +2,8 @@ package com.auctionhouse.events;
 
 import com.auctionhouse.data.AuctionManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.ChestContainer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -17,17 +15,22 @@ public class AuctionEvents {
 
         AuctionManager.Listing listing = AuctionManager.activeListings.get(slot);
 
-        // Donner l'item au joueur
-        ItemStack itemToGive = listing.item.copy();
-        buyer.inventory.add(itemToGive);
-        buyer.sendMessage(new StringTextComponent("§aVous avez acheté l'item pour " + listing.price + "$ !"), buyer.getUUID());
+        // 1. On retire l'argent du compte de l'acheteur via Economy Inc.
+        String commandTake = "balance remove " + buyer.getName().getString() + " " + listing.price;
+        buyer.getServer().getCommands().performCommand(buyer.getServer().createCommandSourceStack(), commandTake);
 
-        // Notifier le vendeur
+        // 2. On ajoute l'argent sur le compte du vendeur via Economy Inc.
         if (listing.seller != null) {
-            listing.seller.sendMessage(new StringTextComponent("§aUn de vos items a été vendu pour " + listing.price + "$ !"), listing.seller.getUUID());
+            String commandGive = "balance add " + listing.seller.getName().getString() + " " + listing.price;
+            buyer.getServer().getCommands().performCommand(buyer.getServer().createCommandSourceStack(), commandGive);
         }
 
-        // Retirer la vente
+        // 3. On donne l'item à l'acheteur
+        ItemStack itemToGive = listing.item.copy();
+        buyer.inventory.add(itemToGive);
+        buyer.sendMessage(new StringTextComponent("§aAchat réussi pour " + listing.price + "$ !"), buyer.getUUID());
+
+        // 4. On retire la vente de l'Hôtel de Ventes
         AuctionManager.activeListings.remove(slot);
         buyer.closeContainer();
     }
