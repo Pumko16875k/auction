@@ -1,21 +1,13 @@
 package com.auctionhouse.events;
 
-import com.auctionhouse.data.AuctionManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.ChestContainer;
-import net.minecraft.inventory.container.ClickType;
-import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = "auctionhouse")
 public class AuctionEvents {
 
     public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
@@ -23,19 +15,19 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Retrait de l'argent de l'acheteur via EconomyInc
+            // Retrait de l'argent de l'acheteur
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance remove " + nomAcheteur + " " + prix
             );
 
-            // Ajout de l'argent au vendeur via EconomyInc
+            // Crédit de l'argent au vendeur
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance add " + vendeur + " " + prix
             );
 
-            acheteur.sendMessage(new StringTextComponent("§aTransaction effectuée : " + prix + " $ payés à " + vendeur), acheteur.getUUID());
+            acheteur.sendMessage(new StringTextComponent("§aAchat réussi pour " + prix + " $ !"), acheteur.getUUID());
         }
     }
 
