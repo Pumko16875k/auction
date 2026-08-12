@@ -1,5 +1,6 @@
 package com.auctionhouse.commands;
 
+import com.auctionhouse.data.AuctionManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -15,7 +16,7 @@ public class AHCommand {
         dispatcher.register(Commands.literal("ah")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().getPlayerOrException();
-                player.sendMessage(new StringTextComponent("§aOuverture de l'Hôtel de Ventes..."), player.getUUID());
+                AuctionManager.openGUI(player, 0);
                 return 1;
             })
             .then(Commands.literal("sell")
@@ -44,7 +45,10 @@ public class AHCommand {
             return 0;
         }
 
+        ItemStack itemToSell = heldItem.copy();
         heldItem.shrink(heldItem.getCount()); 
+
+        AuctionManager.addListing(player, itemToSell, price, days);
         player.sendMessage(new StringTextComponent("§aItem mis en vente pour " + price + "$ pendant " + days + " jours !"), player.getUUID());
         return 1;
     }
