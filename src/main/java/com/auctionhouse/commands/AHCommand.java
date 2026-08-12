@@ -1,6 +1,7 @@
 package com.auctionhouse.commands;
 
 import com.auctionhouse.data.AuctionManager;
+import com.auctionhouse.events.AuctionEvents;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -45,10 +46,17 @@ public class AHCommand {
             return 0;
         }
 
-        ItemStack itemToSell = heldItem.copy();
+        String pseudoVendeur = player.getName().getString();
+        
+        // 1. On applique le formatage (prix + nom du vendeur dans le Lore)
+        ItemStack itemFormatted = AuctionEvents.formatItemForAH(heldItem.copy(), price, pseudoVendeur);
+        
+        // 2. On retire l'item de la main du joueur
         heldItem.shrink(heldItem.getCount()); 
 
-        AuctionManager.addListing(player, itemToSell, price, days);
+        // 3. On ajoute l'item formaté dans l'Hôtel de Vente
+        AuctionManager.addListing(player, itemFormatted, price, days);
+        
         player.sendMessage(new StringTextComponent("§aItem mis en vente pour " + price + "$ pendant " + days + " jours !"), player.getUUID());
         return 1;
     }
