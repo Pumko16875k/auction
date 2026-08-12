@@ -18,16 +18,11 @@ public class AuctionEvents {
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
         if (event.getContainer() instanceof ChestContainer && event.getPlayer() instanceof ServerPlayerEntity) {
-            ChestContainer container = (ChestContainer) event.getContainer();
-            // Détection de l'inventaire AH
-            if (container.getTitle().getString().contains("Auction") || container.getTitle().getString().contains("Hôtel")) {
-                ServerPlayerEntity acheteur = (ServerPlayerEntity) event.getPlayer();
-                MinecraftServer server = acheteur.getServer();
+            ServerPlayerEntity acheteur = (ServerPlayerEntity) event.getPlayer();
+            MinecraftServer server = acheteur.getServer();
 
-                if (server != null) {
-                    // Les commandes d'économie s'exécutent ici lors de l'achat
-                    acheteur.sendMessage(new StringTextComponent("§aTransaction enregistrée !"), acheteur.getUUID());
-                }
+            if (server != null) {
+                // Événement à la fermeture
             }
         }
     }
@@ -37,16 +32,19 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Retrait et ajout de l'argent via le mod EconomyInc
+            // Retrait de l'argent de l'acheteur
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance remove " + nomAcheteur + " " + prix
             );
 
+            // Crédit de l'argent au vendeur
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance add " + vendeur + " " + prix
             );
+
+            acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
         }
     }
 
