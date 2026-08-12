@@ -12,26 +12,22 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = "auctionhouse")
 public class AuctionEvents {
 
-    @SubscribeEvent
-    public static void onInventoryClick(net.minecraftforge.event.entity.player.ItemTooltipEvent event) {
-        // Événement réservé aux interactions d'inventaire
-    }
-
     public static void processBuy(ServerPlayerEntity buyer, int slot) {
         if (slot < 0 || slot >= AuctionManager.activeListings.size()) return;
 
         AuctionManager.Listing listing = AuctionManager.activeListings.get(slot);
 
-        // Don d'item à l'acheteur
-        buyer.inventory.add(listing.item);
+        // Donner l'item au joueur
+        ItemStack itemToGive = listing.item.copy();
+        buyer.inventory.add(itemToGive);
         buyer.sendMessage(new StringTextComponent("§aVous avez acheté l'item pour " + listing.price + "$ !"), buyer.getUUID());
 
-        // Message au vendeur
-        if (listing.seller != null && listing.seller.isAlive()) {
-            listing.seller.sendMessage(new StringTextComponent("§aVotre item a été vendu pour " + listing.price + "$ !"), listing.seller.getUUID());
+        // Notifier le vendeur
+        if (listing.seller != null) {
+            listing.seller.sendMessage(new StringTextComponent("§aUn de vos items a été vendu pour " + listing.price + "$ !"), listing.seller.getUUID());
         }
 
-        // Retrait de la liste
+        // Retirer la vente
         AuctionManager.activeListings.remove(slot);
         buyer.closeContainer();
     }
