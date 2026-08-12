@@ -1,13 +1,20 @@
 package com.auctionhouse.events;
 
+import com.auctionhouse.data.AuctionManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.ChestContainer;
+import net.minecraft.inventory.container.ClickType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraftforge.event.entity.player.PlayerContainerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
+@Mod.EventBusSubscriber
 public class AuctionEvents {
 
     public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
@@ -16,7 +23,7 @@ public class AuctionEvents {
             String nomAcheteur = acheteur.getName().getString();
             int prixInt = (int) prix;
 
-            // Utilisation de la source de commande officielle Mojang 1.16.5 avec permission Console (4)
+            // Retrait et ajout d'argent via la console
             server.getCommands().performCommand(
                 server.createCommandSourceStack().withPermission(4),
                 "balance remove " + nomAcheteur + " " + prixInt
