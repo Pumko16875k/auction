@@ -1,5 +1,6 @@
 package com.auctionhouse.events;
 
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -8,72 +9,31 @@ import net.minecraft.nbt.StringNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
 
-import java.lang.reflect.Method;
-
 public class AuctionEvents {
 
-    /**
-     * Tente d'exécuter la transaction financière.
-     * @return true si la transaction financière est un succès, false sinon.
-     */
     public static boolean executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
         MinecraftServer server = acheteur.getServer();
         if (server == null) return false;
 
-        String nomAcheteur = acheteur.getName().getString();
+        // Récupération exacte du pseudo
+        String nomAcheteur = acheteur.getGameProfile().getName();
+        int prixInt = (int) prix;
 
-        // 1. Essai via Reflection sur les méthodes Java d'EconomyInc
-        try {
-            Class<?> apiClass = Class.forName("com.buuz135.economyinc.api.EconomyIncAPI");
-            
-            // Méthodes type : getBalance, removeBalance, addBalance
-            Method getBalanceMethod = apiClass.getMethod("getBalance", java.util.UUID.class);
-            Method removeBalanceMethod = apiClass.getMethod("removeBalance", java.util.UUID.class, double.class);
-            Method addBalanceMethod = apiClass.getMethod("addBalance", java.util.UUID.class, double.class);
+        // Création de la source de commande officielle du serveur (OP Niveau 4)
+        CommandSource commandSource = server.createCommandSourceStack()
+                .withPermission(4)
+                .withSuppressedOutput();
 
-            double soldeActuel = (double) getBalanceMethod.invoke(null, acheteur.getUUID());
+        // 1. Exécution stricte de la commande /balance remove
+        String cmdRemove = "balance remove " + nomAcheteur + " " + prixInt;
+        int resultRemove = server.getCommands().performCommand(commandSource, cmdRemove);
 
-            if (soldeActuel < prix) {
-                acheteur.sendMessage(new StringTextComponent("§cVous n'avez pas assez d'argent ! (Solde: " + soldeActuel + " $, Requis: " + prix + " $)"), acheteur.getUUID());
-                return false;
-            }
+        // 2. Crédit au vendeur
+        String cmdAdd = "balance add " + vendeur + " " + prixInt;
+        server.getCommands().performCommand(commandSource, cmdAdd);
 
-            // Prélèvement et Crédit
-            removeBalanceMethod.invoke(null, acheteur.getUUID(), prix);
-
-            // Recherche de l'UUID du vendeur s'il est en ligne
-            ServerPlayerEntity vendeurPlayer = server.getPlayerList().getPlayerByName(vendeur);
-            if (vendeurPlayer != null) {
-                addBalanceMethod.invoke(null, vendeurPlayer.getUUID(), prix);
-                vendeurPlayer.sendMessage(new StringTextComponent("§aVous avez vendu un objet pour §e" + (int)prix + " $ §a!"), vendeurPlayer.getUUID());
-            }
-
-            acheteur.sendMessage(new StringTextComponent("§aAchat réussi pour §e" + (int)prix + " $ §a!"), acheteur.getUUID());
-            return true;
-
-        } catch (Exception e) {
-            // 2. Repli de secours : Exécution directe par commande console si l'API Reflection échoue
-            int prixInt = (int) prix;
-            int resultRemove = server.getCommands().performCommand(
-                server.createCommandSourceStack().withPermission(4),
-                "balance remove " + nomAcheteur + " " + prixInt
-            );
-
-            if (resultRemove == 0) {
-                server.getCommands().performCommand(
-                    server.createCommandSourceStack().withPermission(4),
-                    "balance take " + nomAcheteur + " " + prixInt
-                );
-            }
-
-            server.getCommands().performCommand(
-                server.createCommandSourceStack().withPermission(4),
-                "balance add " + vendeur + " " + prixInt
-            );
-
-            acheteur.sendMessage(new StringTextComponent("§aAchat effectué pour §e" + prixInt + " $ !"), acheteur.getUUID());
-            return true;
-        }
+        acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prixInt + " $ §aont été prélevés."), acheteur.getUUID());
+        return true;
     }
 
     public static ItemStack formatItemForAH(ItemStack originalStack, double prix, String vendeur) {
