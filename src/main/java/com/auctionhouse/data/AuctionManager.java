@@ -1,8 +1,13 @@
 package com.auctionhouse.data;
 
+import com.auctionhouse.events.AuctionEvents;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.ChestContainer;
+import net.minecraft.inventory.container.ClickType;
+import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.inventory.container.SimpleNamedContainerProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.StringTextComponent;
@@ -42,8 +47,43 @@ public class AuctionManager {
         }
 
         player.openMenu(new SimpleNamedContainerProvider((id, playerInv, p) -> 
-            ChestContainer.sixRows(id, playerInv, chestInventory),
+            new AHContainer(id, playerInv, chestInventory),
             new StringTextComponent("Hôtel de Ventes")
         ));
+    }
+
+    public static class AHContainer extends ChestContainer {
+        public AHContainer(int id, PlayerInventory playerInv, Inventory inventory) {
+            super(ContainerType.GENERIC_9x6, id, playerInv, inventory, 6);
+        }
+
+        @Override
+        public ItemStack clicked(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
+            if (slotId >= 0 && slotId < activeListings.size() && player instanceof ServerPlayerEntity) {
+                ServerPlayerEntity buyer = (ServerPlayerEntity) player;
+                Listing listing = activeListings.get(slotId);
+
+                // Empêche le vendeur d'acheter son propre item
+                if (buyer.getName().getString().equalsIgnoreCase(listing.sellerName)) {
+                    buyer.sendMessage(new StringTextComponent("§cVous ne pouvez pas acheter votre propre objet !"), buyer.getUUID());
+                    return ItemStack.EMPTY;
+                }
+
+                // 1. Transaction financière
+                AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
+
+                // 2. Nettoyage et don de l'objet
+                ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
+                buyer.inventory.add(cleanItem);
+
+                // 3. Suppression de l'offre
+                activeListings.remove(slotId);
+
+                // 4. Fermeture du GUI
+                buyer.closeContainer();
+                return ItemStack.EMPTY;
+            }
+            return ItemStack.EMPTY;
+        }
     }
 }
