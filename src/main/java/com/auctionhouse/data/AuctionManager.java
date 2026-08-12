@@ -59,25 +59,27 @@ public class AuctionManager {
 
         @Override
         public ItemStack clicked(int slotId, int dragType, ClickType clickTypeIn, PlayerEntity player) {
+            // Seuls les slots de l'Hôtel de Ventes (0 à 44) déclenchent l'achat
             if (slotId >= 0 && slotId < activeListings.size() && player instanceof ServerPlayerEntity) {
                 ServerPlayerEntity buyer = (ServerPlayerEntity) player;
                 Listing listing = activeListings.get(slotId);
 
-                // 1. Transaction d'argent
+                // 1. Exécution forcée de la transaction en mode Console
                 AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
 
-                // 2. Nettoyage et don de l'item
+                // 2. Nettoyage du lore et don de l'item à l'acheteur
                 ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
                 buyer.inventory.add(cleanItem);
 
-                // 3. Suppression de la vente
+                // 3. Retrait du marché
                 activeListings.remove(slotId);
 
-                // 4. Ferme le menu
+                // 4. Fermeture propre du menu
                 buyer.closeContainer();
                 return ItemStack.EMPTY;
             }
             
+            // Empêche la prise d'items hors-transaction
             return ItemStack.EMPTY;
         }
     }
