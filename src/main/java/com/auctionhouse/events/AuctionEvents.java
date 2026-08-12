@@ -4,6 +4,7 @@ import com.auctionhouse.data.AuctionManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.ChestContainer;
 import net.minecraft.inventory.container.ClickType;
+import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -16,13 +17,6 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = "auctionhouse")
 public class AuctionEvents {
-
-    @SubscribeEvent
-    public static void onContainerClose(PlayerContainerEvent.Close event) {
-        if (event.getContainer() instanceof ChestContainer && event.getPlayer() instanceof ServerPlayerEntity) {
-            // Événement à la fermeture si besoin
-        }
-    }
 
     public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
         MinecraftServer server = acheteur.getServer();
