@@ -18,12 +18,7 @@ public class AuctionEvents {
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
         if (event.getContainer() instanceof ChestContainer && event.getPlayer() instanceof ServerPlayerEntity) {
-            ServerPlayerEntity acheteur = (ServerPlayerEntity) event.getPlayer();
-            MinecraftServer server = acheteur.getServer();
-
-            if (server != null) {
-                // Événement à la fermeture
-            }
+            // Événement à la fermeture
         }
     }
 
@@ -32,19 +27,18 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Retrait de l'argent de l'acheteur
+            // Exécution des commandes EconomyInc
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance remove " + nomAcheteur + " " + prix
             );
 
-            // Crédit de l'argent au vendeur
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance add " + vendeur + " " + prix
             );
 
-            acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
+            acheteur.sendMessage(new StringTextComponent("§aTransaction effectuée : " + prix + " $ envoyés à " + vendeur), acheteur.getUUID());
         }
     }
 
@@ -60,5 +54,26 @@ public class AuctionEvents {
         display.put("Lore", lore);
         tag.put("display", display);
         return stack;
+    }
+
+    // Nettoie le Lore pour redonner l'item d'origine sans les lignes "Prix" et "Vendeur"
+    public static ItemStack cleanItemFromAH(ItemStack item) {
+        ItemStack cleanStack = item.copy();
+        CompoundNBT tag = cleanStack.getTag();
+        if (tag != null && tag.contains("display")) {
+            CompoundNBT display = tag.getCompound("display");
+            if (display.contains("Lore")) {
+                ListNBT lore = display.getList("Lore", 8);
+                // On retire les deux dernières lignes ajoutées pour le /ah
+                if (lore.size() >= 2) {
+                    lore.remove(lore.size() - 1);
+                    lore.remove(lore.size() - 1);
+                }
+                if (lore.isEmpty()) {
+                    display.remove("Lore");
+                }
+            }
+        }
+        return cleanStack;
     }
 }
