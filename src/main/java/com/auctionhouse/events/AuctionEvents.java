@@ -1,9 +1,9 @@
 package com.auctionhouse.events;
 
 import com.auctionhouse.AuctionMod;
-import com.auctionhouse.world.AuctionItem;
-import com.auctionhouse.world.AuctionSaveData;
-import com.auctionhouse.inventory.AuctionMenu;
+import com.auctionhouse.AuctionItem;
+import com.auctionhouse.AuctionSaveData;
+import com.auctionhouse.AuctionMenu;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -32,22 +32,20 @@ public class AuctionEvents {
                     String nomVendeur = item.getSellerName();
                     double prix = item.getPrice();
 
-                    // 1. Retire l'argent à l'acheteur avec ta vraie commande
+                    // 1. Débite l'argent du compte bancaire
                     server.getCommands().performCommand(
                         server.createCommandSourceStack(),
                         "balance remove " + nomAcheteur + " " + prix
                     );
 
-                    // 2. Donne l'argent au vendeur avec ta vraie commande
+                    // 2. Crédite le vendeur
                     server.getCommands().performCommand(
                         server.createCommandSourceStack(),
                         "balance add " + nomVendeur + " " + prix
                     );
 
-                    // 3. Donne l'objet à l'acheteur
+                    // 3. Rends l'item et sauvegarde
                     acheteur.addItem(item.getStack().copy());
-
-                    // 4. Supprime l'objet de l'hôtel de vente
                     AuctionSaveData.get(server).removeItem(item.getId());
 
                     acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
