@@ -63,24 +63,23 @@ public class AuctionManager {
                 ServerPlayerEntity buyer = (ServerPlayerEntity) player;
                 Listing listing = activeListings.get(slotId);
 
-                // Empêche le vendeur d'acheter son propre item
+                // Anti-self buy
                 if (buyer.getName().getString().equalsIgnoreCase(listing.sellerName)) {
                     buyer.sendMessage(new StringTextComponent("§cVous ne pouvez pas acheter votre propre objet !"), buyer.getUUID());
                     return ItemStack.EMPTY;
                 }
 
-                // 1. Transaction financière
-                AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
+                // 1. Tente le paiement
+                boolean paiementReussi = AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
 
-                // 2. Nettoyage et don de l'objet
-                ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
-                buyer.inventory.add(cleanItem);
+                // 2. Si le paiement est validé, on donne l'item et on retire du marché
+                if (paiementReussi) {
+                    ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
+                    buyer.inventory.add(cleanItem);
+                    activeListings.remove(slotId);
+                    buyer.closeContainer();
+                }
 
-                // 3. Suppression de l'offre
-                activeListings.remove(slotId);
-
-                // 4. Fermeture du GUI
-                buyer.closeContainer();
                 return ItemStack.EMPTY;
             }
             return ItemStack.EMPTY;
