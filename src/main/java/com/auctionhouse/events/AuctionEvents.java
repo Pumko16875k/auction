@@ -1,5 +1,6 @@
-package com.pumko.auction;
+package com.auctionhouse.events;
 
+import com.auctionhouse.AuctionMod;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -17,55 +18,41 @@ public class AuctionEvents {
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
-        if (event.getContainer() instanceof AuctionMenu) {
-            AuctionMenu menu = (AuctionMenu) event.getContainer();
-            if (menu.isBuyClick()) {
-                PlayerEntity player = event.getPlayer();
-                AuctionItem item = menu.getSelectedBuyItem();
+        // Logique de fermeture du menu si nécessaire
+    }
 
-                if (item != null && player instanceof ServerPlayerEntity) {
-                    ServerPlayerEntity acheteur = (ServerPlayerEntity) player;
-                    MinecraftServer server = acheteur.getServer();
+    public static void processPurchase(ServerPlayerEntity acheteur, String vendeur, double prix, ItemStack item) {
+        MinecraftServer server = acheteur.getServer();
 
-                    if (server != null) {
-                        String nomAcheteur = acheteur.getName().getString();
-                        String nomVendeur = item.getSellerName();
-                        double prix = item.getPrice();
+        if (server != null) {
+            String nomAcheteur = acheteur.getName().getString();
 
-                        // 1. On retire l'argent à l'acheteur
-                        server.getCommandManager().handleCommand(
-                            server.getCommandSource(),
-                            "balance remove " + nomAcheteur + " " + prix
-                        );
+            // 1. Débiter l'acheteur (syntaxe Forge 1.16.5 exacte)
+            server.getCommands().performCommand(
+                server.createCommandSourceStack(),
+                "balance remove " + nomAcheteur + " " + prix
+            );
 
-                        // 2. On donne l'argent au vendeur
-                        server.getCommandManager().handleCommand(
-                            server.getCommandSource(),
-                            "balance add " + nomVendeur + " " + prix
-                        );
+            // 2. Créditer le vendeur
+            server.getCommands().performCommand(
+                server.createCommandSourceStack(),
+                "balance add " + vendeur + " " + prix
+            );
 
-                        // 3. Donner l'objet à l'acheteur
-                        acheteur.addItemStackToInventory(item.getStack().copy());
-
-                        // 4. Retirer l'objet du /ah
-                        AuctionSaveData.get(server).removeItem(item.getId());
-
-                        acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUniqueID());
-                    }
-                }
-            }
+            // 3. Donner l'item et message
+            acheteur.addItem(item.copy());
+            acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
         }
     }
 
-    // Ajouter le prix dans la description de l'item (Lore)
-    public static ItemStack formatItemForAH(AuctionItem auctionItem) {
-        ItemStack stack = auctionItem.getStack().copy();
+    public static ItemStack formatItemForAH(ItemStack originalStack, double prix, String vendeur) {
+        ItemStack stack = originalStack.copy();
         CompoundNBT tag = stack.getOrCreateTag();
         CompoundNBT display = tag.contains("display") ? tag.getCompound("display") : new CompoundNBT();
         ListNBT lore = display.contains("Lore") ? display.getList("Lore", 8) : new ListNBT();
 
-        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + auctionItem.getPrice() + " $\",\"italic\":false}"));
-        lore.add(StringNBT.valueOf("{\"text\":\"§7Vendeur: §b" + auctionItem.getSellerName() + "\",\"italic\":false}"));
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + prix + " $\",\"italic\":false}"));
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Vendeur: §b" + vendeur + "\",\"italic\":false}"));
 
         display.put("Lore", lore);
         tag.put("display", display);
