@@ -33,7 +33,7 @@ public class AuctionManager {
     }
 
     public static void openGUI(ServerPlayerEntity player, int page) {
-        Inventory chestInventory = new Inventory(54); // Interface coffre double (54 slots)
+        Inventory chestInventory = new Inventory(54);
 
         for (int i = 0; i < Math.min(activeListings.size(), 45); i++) {
             chestInventory.setItem(i, activeListings.get(i).item);
