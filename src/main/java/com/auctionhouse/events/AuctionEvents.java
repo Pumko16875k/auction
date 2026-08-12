@@ -1,9 +1,6 @@
 package com.auctionhouse.events;
 
-import com.auctionhouse.AuctionMod;
-import com.auctionhouse.AuctionItem;
-import com.auctionhouse.AuctionSaveData;
-import com.auctionhouse.AuctionMenu;
+import com.auctionhouse.*;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -15,7 +12,7 @@ import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = AuctionMod.MOD_ID)
+@Mod.EventBusSubscriber(modid = "auctionhouse")
 public class AuctionEvents {
 
     @SubscribeEvent
@@ -32,7 +29,7 @@ public class AuctionEvents {
                     String nomVendeur = item.getSellerName();
                     double prix = item.getPrice();
 
-                    // 1. Débite l'argent du compte bancaire
+                    // 1. Débite le compte du joueur
                     server.getCommands().performCommand(
                         server.createCommandSourceStack(),
                         "balance remove " + nomAcheteur + " " + prix
@@ -44,7 +41,7 @@ public class AuctionEvents {
                         "balance add " + nomVendeur + " " + prix
                     );
 
-                    // 3. Rends l'item et sauvegarde
+                    // 3. Donne l'item et supprime de la banque du mod
                     acheteur.addItem(item.getStack().copy());
                     AuctionSaveData.get(server).removeItem(item.getId());
 
