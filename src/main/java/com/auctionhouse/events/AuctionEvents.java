@@ -1,7 +1,7 @@
 package com.auctionhouse.events;
 
-import com.auctionhouse.*;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.ChestContainer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -17,37 +17,36 @@ public class AuctionEvents {
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
-        if (event.getContainer() instanceof AuctionMenu) {
-            AuctionMenu menu = (AuctionMenu) event.getContainer();
-            if (menu.isBuyClick() && event.getPlayer() instanceof ServerPlayerEntity) {
+        if (event.getContainer() instanceof ChestContainer && event.getPlayer() instanceof ServerPlayerEntity) {
+            ChestContainer container = (ChestContainer) event.getContainer();
+            // Détection de l'inventaire AH
+            if (container.getTitle().getString().contains("Auction") || container.getTitle().getString().contains("Hôtel")) {
                 ServerPlayerEntity acheteur = (ServerPlayerEntity) event.getPlayer();
-                AuctionItem item = menu.getSelectedBuyItem();
                 MinecraftServer server = acheteur.getServer();
 
-                if (item != null && server != null) {
-                    String nomAcheteur = acheteur.getName().getString();
-                    String nomVendeur = item.getSellerName();
-                    double prix = item.getPrice();
-
-                    // 1. Débite le compte du joueur
-                    server.getCommands().performCommand(
-                        server.createCommandSourceStack(),
-                        "balance remove " + nomAcheteur + " " + prix
-                    );
-
-                    // 2. Crédite le vendeur
-                    server.getCommands().performCommand(
-                        server.createCommandSourceStack(),
-                        "balance add " + nomVendeur + " " + prix
-                    );
-
-                    // 3. Donne l'item et supprime de la banque du mod
-                    acheteur.addItem(item.getStack().copy());
-                    AuctionSaveData.get(server).removeItem(item.getId());
-
-                    acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
+                if (server != null) {
+                    // Les commandes d'économie s'exécutent ici lors de l'achat
+                    acheteur.sendMessage(new StringTextComponent("§aTransaction enregistrée !"), acheteur.getUUID());
                 }
             }
+        }
+    }
+
+    public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
+        MinecraftServer server = acheteur.getServer();
+        if (server != null) {
+            String nomAcheteur = acheteur.getName().getString();
+
+            // Retrait et ajout de l'argent via le mod EconomyInc
+            server.getCommands().performCommand(
+                server.createCommandSourceStack(),
+                "balance remove " + nomAcheteur + " " + prix
+            );
+
+            server.getCommands().performCommand(
+                server.createCommandSourceStack(),
+                "balance add " + vendeur + " " + prix
+            );
         }
     }
 
