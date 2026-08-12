@@ -1,7 +1,9 @@
 package com.auctionhouse.events;
 
 import com.auctionhouse.AuctionMod;
-import net.minecraft.entity.player.PlayerEntity;
+import com.auctionhouse.world.AuctionItem;
+import com.auctionhouse.world.AuctionSaveData;
+import com.auctionhouse.inventory.AuctionMenu;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -18,30 +20,39 @@ public class AuctionEvents {
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
-        // Logique de fermeture du menu si nécessaire
-    }
+        if (event.getContainer() instanceof AuctionMenu) {
+            AuctionMenu menu = (AuctionMenu) event.getContainer();
+            if (menu.isBuyClick() && event.getPlayer() instanceof ServerPlayerEntity) {
+                ServerPlayerEntity acheteur = (ServerPlayerEntity) event.getPlayer();
+                AuctionItem item = menu.getSelectedBuyItem();
+                MinecraftServer server = acheteur.getServer();
 
-    public static void processPurchase(ServerPlayerEntity acheteur, String vendeur, double prix, ItemStack item) {
-        MinecraftServer server = acheteur.getServer();
+                if (item != null && server != null) {
+                    String nomAcheteur = acheteur.getName().getString();
+                    String nomVendeur = item.getSellerName();
+                    double prix = item.getPrice();
 
-        if (server != null) {
-            String nomAcheteur = acheteur.getName().getString();
+                    // 1. Retire l'argent à l'acheteur avec ta vraie commande
+                    server.getCommands().performCommand(
+                        server.createCommandSourceStack(),
+                        "balance remove " + nomAcheteur + " " + prix
+                    );
 
-            // 1. Débiter l'acheteur (syntaxe Forge 1.16.5 exacte)
-            server.getCommands().performCommand(
-                server.createCommandSourceStack(),
-                "balance remove " + nomAcheteur + " " + prix
-            );
+                    // 2. Donne l'argent au vendeur avec ta vraie commande
+                    server.getCommands().performCommand(
+                        server.createCommandSourceStack(),
+                        "balance add " + nomVendeur + " " + prix
+                    );
 
-            // 2. Créditer le vendeur
-            server.getCommands().performCommand(
-                server.createCommandSourceStack(),
-                "balance add " + vendeur + " " + prix
-            );
+                    // 3. Donne l'objet à l'acheteur
+                    acheteur.addItem(item.getStack().copy());
 
-            // 3. Donner l'item et message
-            acheteur.addItem(item.copy());
-            acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
+                    // 4. Supprime l'objet de l'hôtel de vente
+                    AuctionSaveData.get(server).removeItem(item.getId());
+
+                    acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUUID());
+                }
+            }
         }
     }
 
