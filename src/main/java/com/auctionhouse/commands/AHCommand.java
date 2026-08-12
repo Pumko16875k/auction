@@ -14,7 +14,7 @@ public class AHCommand {
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
         dispatcher.register(Commands.literal("ah")
             .executes(context -> {
-                ServerPlayerEntity player = context.getSource().asPlayer();
+                ServerPlayerEntity player = context.getSource().getPlayerOrException();
                 player.sendMessage(new StringTextComponent("§aOuverture de l'Hôtel de Ventes..."), player.getUUID());
                 return 1;
             })
@@ -22,13 +22,13 @@ public class AHCommand {
                 .then(Commands.argument("price", DoubleArgumentType.doubleArg(0.01))
                     .executes(context -> {
                         double price = DoubleArgumentType.getDouble(context, "price");
-                        return processSell(context.getSource().asPlayer(), price, 7);
+                        return processSell(context.getSource().getPlayerOrException(), price, 7);
                     })
                     .then(Commands.argument("days", IntegerArgumentType.integer(1, 100))
                         .executes(context -> {
                             double price = DoubleArgumentType.getDouble(context, "price");
                             int days = IntegerArgumentType.getInteger(context, "days");
-                            return processSell(context.getSource().asPlayer(), price, days);
+                            return processSell(context.getSource().getPlayerOrException(), price, days);
                         })
                     )
                 )
