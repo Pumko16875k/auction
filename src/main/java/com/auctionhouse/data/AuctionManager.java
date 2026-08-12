@@ -42,18 +42,17 @@ public class AuctionManager {
 
         Listing listing = activeListings.get(slot);
 
-        // 1. Exécute le transfert d'argent (/balance remove et /balance add)
+        // 1. Exécution du transfert d'argent via EconomyInc
         AuctionEvents.executeTransaction(buyer, listing.sellerName, listing.price);
 
-        // 2. Donne l'item acheté au joueur
-        buyer.inventory.add(listing.item.copy());
+        // 2. Nettoyage du Lore et don de l'item propre à l'acheteur
+        ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
+        buyer.inventory.add(cleanItem);
 
-        // 3. Retire l'item des ventes
+        // 3. Retrait de la liste
         activeListings.remove(slot);
 
-        buyer.sendMessage(new StringTextComponent("§aVous avez acheté cet item pour " + listing.price + " $ !"), buyer.getUUID());
-        
-        // Rafraîchit l'interface du joueur
+        // 4. Mise à jour du menu
         openGUI(buyer, 0);
     }
 
