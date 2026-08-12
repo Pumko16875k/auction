@@ -15,22 +15,25 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Source de commande de niveau CONSOLE / SERVEUR (Bypasse tous les soucis de permissions)
-            net.minecraft.command.CommandSource consoleSource = server.createCommandSourceStack().withSuppressedOutput();
+            // Convertit le prix en entier si ton plugin d'économie n'aime pas les doubles (ex: 10.0 -> 10)
+            long prixEntier = (long) prix;
 
-            // 1. Retrait de l'argent de l'acheteur
+            System.out.println("[AH-DEBUG] Tentative de retrait : /balance remove " + nomAcheteur + " " + prixEntier);
+
+            // Exécution directe via les commandes du serveur avec privilèges ROOT (Op Level 4)
             server.getCommands().performCommand(
-                consoleSource,
-                "balance remove " + nomAcheteur + " " + prix
+                server.createCommandSourceStack().withPermission(4),
+                "balance remove " + nomAcheteur + " " + prixEntier
             );
 
-            // 2. Crédit de l'argent au vendeur
+            System.out.println("[AH-DEBUG] Tentative d'ajout : /balance add " + vendeur + " " + prixEntier);
+
             server.getCommands().performCommand(
-                consoleSource,
-                "balance add " + vendeur + " " + prix
+                server.createCommandSourceStack().withPermission(4),
+                "balance add " + vendeur + " " + prixEntier
             );
 
-            acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prix + " $ §aont été prélevés."), acheteur.getUUID());
+            acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prixEntier + " $ §aont été retirés."), acheteur.getUUID());
         }
     }
 
@@ -40,7 +43,7 @@ public class AuctionEvents {
         CompoundNBT display = tag.contains("display") ? tag.getCompound("display") : new CompoundNBT();
         ListNBT lore = display.contains("Lore") ? display.getList("Lore", 8) : new ListNBT();
 
-        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + prix + " $\",\"italic\":false}"));
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + (long)prix + " $\",\"italic\":false}"));
         lore.add(StringNBT.valueOf("{\"text\":\"§7Vendeur: §b" + vendeur + "\",\"italic\":false}"));
 
         display.put("Lore", lore);
