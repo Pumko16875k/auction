@@ -1,7 +1,9 @@
 package com.auctionhouse.events;
 
+import com.auctionhouse.data.AuctionManager;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.ChestContainer;
+import net.minecraft.inventory.container.ClickType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -18,7 +20,7 @@ public class AuctionEvents {
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
         if (event.getContainer() instanceof ChestContainer && event.getPlayer() instanceof ServerPlayerEntity) {
-            // Événement à la fermeture
+            // Événement à la fermeture si besoin
         }
     }
 
@@ -27,18 +29,19 @@ public class AuctionEvents {
         if (server != null) {
             String nomAcheteur = acheteur.getName().getString();
 
-            // Exécution des commandes EconomyInc
+            // Retrait de l'argent de l'acheteur via EconomyInc
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance remove " + nomAcheteur + " " + prix
             );
 
+            // Ajout de l'argent au vendeur via EconomyInc
             server.getCommands().performCommand(
                 server.createCommandSourceStack(),
                 "balance add " + vendeur + " " + prix
             );
 
-            acheteur.sendMessage(new StringTextComponent("§aTransaction effectuée : " + prix + " $ envoyés à " + vendeur), acheteur.getUUID());
+            acheteur.sendMessage(new StringTextComponent("§aTransaction effectuée : " + prix + " $ payés à " + vendeur), acheteur.getUUID());
         }
     }
 
@@ -56,7 +59,6 @@ public class AuctionEvents {
         return stack;
     }
 
-    // Nettoie le Lore pour redonner l'item d'origine sans les lignes "Prix" et "Vendeur"
     public static ItemStack cleanItemFromAH(ItemStack item) {
         ItemStack cleanStack = item.copy();
         CompoundNBT tag = cleanStack.getTag();
@@ -64,7 +66,6 @@ public class AuctionEvents {
             CompoundNBT display = tag.getCompound("display");
             if (display.contains("Lore")) {
                 ListNBT lore = display.getList("Lore", 8);
-                // On retire les deux dernières lignes ajoutées pour le /ah
                 if (lore.size() >= 2) {
                     lore.remove(lore.size() - 1);
                     lore.remove(lore.size() - 1);
