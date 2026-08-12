@@ -1,41 +1,41 @@
 package com.auctionhouse.events;
 
-import com.auctionhouse.data.AuctionManager;
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.ChestContainer;
-import net.minecraft.inventory.container.ClickType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber
 public class AuctionEvents {
 
-    public static void executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
+    public static boolean executeTransaction(ServerPlayerEntity acheteur, String vendeur, double prix) {
         MinecraftServer server = acheteur.getServer();
-        if (server != null) {
-            String nomAcheteur = acheteur.getName().getString();
-            int prixInt = (int) prix;
+        if (server == null) return false;
 
-            // Retrait et ajout d'argent via la console
-            server.getCommands().performCommand(
-                server.createCommandSourceStack().withPermission(4),
-                "balance remove " + nomAcheteur + " " + prixInt
-            );
+        String nomAcheteur = acheteur.getName().getString();
+        int prixInt = (int) prix;
 
-            server.getCommands().performCommand(
-                server.createCommandSourceStack().withPermission(4),
-                "balance add " + vendeur + " " + prixInt
-            );
+        // Création d'une CommandSource avec l'identité exacte du joueur ET le niveau OP 4
+        // Cela garantit que la commande s'exécute dans le bon contexte d'économie
+        CommandSource sourceAcheteur = acheteur.createCommandSourceStack().withPermission(4);
+        CommandSource sourceConsole = server.createCommandSourceStack().withPermission(4);
 
-            acheteur.sendMessage(new StringTextComponent("§aAchat effectué ! §e" + prixInt + " $ §aont été prélevés."), acheteur.getUUID());
+        // 1. Retrait de l'argent du joueur acheteur
+        int resultRemove = server.getCommands().performCommand(sourceConsole, "balance remove " + nomAcheteur + " " + prixInt);
+
+        // Si la commande remove échoue, on tente la variante 'take' utilisée par certains builds d'EconomyInc
+        if (resultRemove == 0) {
+            resultRemove = server.getCommands().performCommand(sourceConsole, "balance take " + nomAcheteur + " " + prixInt);
         }
+
+        // 2. Ajout de l'argent au vendeur
+        server.getCommands().performCommand(sourceConsole, "balance add " + vendeur + " " + prixInt);
+
+        acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prixInt + " $ §aont été prélevés."), acheteur.getUUID());
+        return true;
     }
 
     public static ItemStack formatItemForAH(ItemStack originalStack, double prix, String vendeur) {
