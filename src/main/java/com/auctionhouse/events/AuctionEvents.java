@@ -15,22 +15,25 @@ public class AuctionEvents {
         MinecraftServer server = acheteur.getServer();
         if (server == null) return false;
 
-        // Récupération exacte du pseudo
-        String nomAcheteur = acheteur.getGameProfile().getName();
+        // En mode cracké, on prend le nom brut du joueur tel qu'il apparaît en jeu
+        String nomAcheteur = acheteur.getScoreboardName();
         int prixInt = (int) prix;
 
-        // Création de la source de commande officielle du serveur (OP Niveau 4)
-        CommandSource commandSource = server.createCommandSourceStack()
+        // On crée la source DEPUIS LE JOUEUR (pour qu'EconomyInc reconnaisse son compte)
+        // mais avec la permission Level 4 (Console) temporaire pour contourner les perms
+        CommandSource sourceJoueur = acheteur.createCommandSourceStack()
                 .withPermission(4)
                 .withSuppressedOutput();
 
-        // 1. Exécution stricte de la commande /balance remove
-        String cmdRemove = "balance remove " + nomAcheteur + " " + prixInt;
-        int resultRemove = server.getCommands().performCommand(commandSource, cmdRemove);
+        CommandSource sourceConsole = server.createCommandSourceStack()
+                .withPermission(4)
+                .withSuppressedOutput();
 
-        // 2. Crédit au vendeur
-        String cmdAdd = "balance add " + vendeur + " " + prixInt;
-        server.getCommands().performCommand(commandSource, cmdAdd);
+        // 1. Exécution du retrait via le joueur boosté en OP
+        server.getCommands().performCommand(sourceJoueur, "balance remove " + nomAcheteur + " " + prixInt);
+
+        // 2. Crédit au vendeur via la console
+        server.getCommands().performCommand(sourceConsole, "balance add " + vendeur + " " + prixInt);
 
         acheteur.sendMessage(new StringTextComponent("§aAchat réussi ! §e" + prixInt + " $ §aont été prélevés."), acheteur.getUUID());
         return true;
