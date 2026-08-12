@@ -1,37 +1,74 @@
-package com.auctionhouse.events;
+package com.pumko.auction;
 
-import com.auctionhouse.data.AuctionManager;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.StringNBT;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber(modid = "auctionhouse")
+@Mod.EventBusSubscriber(modid = AuctionMod.MOD_ID)
 public class AuctionEvents {
 
-    public static void processBuy(ServerPlayerEntity buyer, int slot) {
-        if (slot < 0 || slot >= AuctionManager.activeListings.size()) return;
+    @SubscribeEvent
+    public static void onContainerClose(PlayerContainerEvent.Close event) {
+        if (event.getContainer() instanceof AuctionMenu) {
+            AuctionMenu menu = (AuctionMenu) event.getContainer();
+            if (menu.isBuyClick()) {
+                PlayerEntity player = event.getPlayer();
+                AuctionItem item = menu.getSelectedBuyItem();
 
-        AuctionManager.Listing listing = AuctionManager.activeListings.get(slot);
+                if (item != null && player instanceof ServerPlayerEntity) {
+                    ServerPlayerEntity acheteur = (ServerPlayerEntity) player;
+                    MinecraftServer server = acheteur.getServer();
 
-        // 1. On retire l'argent du compte de l'acheteur via Economy Inc.
-        String commandTake = "balance remove " + buyer.getName().getString() + " " + listing.price;
-        buyer.getServer().getCommands().performCommand(buyer.getServer().createCommandSourceStack(), commandTake);
+                    if (server != null) {
+                        String nomAcheteur = acheteur.getName().getString();
+                        String nomVendeur = item.getSellerName();
+                        double prix = item.getPrice();
 
-        // 2. On ajoute l'argent sur le compte du vendeur via Economy Inc.
-        if (listing.seller != null) {
-            String commandGive = "balance add " + listing.seller.getName().getString() + " " + listing.price;
-            buyer.getServer().getCommands().performCommand(buyer.getServer().createCommandSourceStack(), commandGive);
+                        // 1. On retire l'argent à l'acheteur
+                        server.getCommandManager().handleCommand(
+                            server.getCommandSource(),
+                            "balance remove " + nomAcheteur + " " + prix
+                        );
+
+                        // 2. On donne l'argent au vendeur
+                        server.getCommandManager().handleCommand(
+                            server.getCommandSource(),
+                            "balance add " + nomVendeur + " " + prix
+                        );
+
+                        // 3. Donner l'objet à l'acheteur
+                        acheteur.addItemStackToInventory(item.getStack().copy());
+
+                        // 4. Retirer l'objet du /ah
+                        AuctionSaveData.get(server).removeItem(item.getId());
+
+                        acheteur.sendMessage(new StringTextComponent("§aAchat effectué avec succès !"), acheteur.getUniqueID());
+                    }
+                }
+            }
         }
+    }
 
-        // 3. On donne l'item à l'acheteur
-        ItemStack itemToGive = listing.item.copy();
-        buyer.inventory.add(itemToGive);
-        buyer.sendMessage(new StringTextComponent("§aAchat réussi pour " + listing.price + "$ !"), buyer.getUUID());
+    // Ajouter le prix dans la description de l'item (Lore)
+    public static ItemStack formatItemForAH(AuctionItem auctionItem) {
+        ItemStack stack = auctionItem.getStack().copy();
+        CompoundNBT tag = stack.getOrCreateTag();
+        CompoundNBT display = tag.contains("display") ? tag.getCompound("display") : new CompoundNBT();
+        ListNBT lore = display.contains("Lore") ? display.getList("Lore", 8) : new ListNBT();
 
-        // 4. On retire la vente de l'Hôtel de Ventes
-        AuctionManager.activeListings.remove(slot);
-        buyer.closeContainer();
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Prix: §e" + auctionItem.getPrice() + " $\",\"italic\":false}"));
+        lore.add(StringNBT.valueOf("{\"text\":\"§7Vendeur: §b" + auctionItem.getSellerName() + "\",\"italic\":false}"));
+
+        display.put("Lore", lore);
+        tag.put("display", display);
+        return stack;
     }
 }
