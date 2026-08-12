@@ -22,3 +22,24 @@ minecraft {
 dependencies {
     minecraft 'net.minecraftforge:forge:1.16.5-36.2.39'
 }
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            "Specification-Title": "auctionhouse",
+            "Specification-Vendor": "Pumko",
+            "Specification-Version": "1",
+            "Implementation-Title": project.name,
+            "Implementation-Version": project.version,
+            "Implementation-Vendor": "Pumko",
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
