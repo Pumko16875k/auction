@@ -81,7 +81,7 @@ public class AuctionManager {
 
             activeListings.clear();
             try (FileReader reader = new FileReader(file)) {
-                // Compatibilité ancienne version de Gson (1.16.5)
+                // Syntaxe compatible Forge 1.16.5
                 JsonArray jsonArray = new JsonParser().parse(reader).getAsJsonArray();
                 for (int i = 0; i < jsonArray.size(); i++) {
                     JsonObject obj = jsonArray.get(i).getAsJsonObject();
