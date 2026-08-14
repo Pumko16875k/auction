@@ -47,7 +47,7 @@ public class AuctionManager {
 
     public static void addListing(ServerPlayerEntity seller, ItemStack item, double price, int days) {
         activeListings.add(new Listing(seller.getScoreboardName(), item, price, days));
-        saveListings(); // Sauvegarde automatique à chaque mise en vente
+        saveListings();
     }
 
     public static void saveListings() {
@@ -81,7 +81,8 @@ public class AuctionManager {
 
             activeListings.clear();
             try (FileReader reader = new FileReader(file)) {
-                JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
+                // Compatibilité ancienne version de Gson (1.16.5)
+                JsonArray jsonArray = new JsonParser().parse(reader).getAsJsonArray();
                 for (int i = 0; i < jsonArray.size(); i++) {
                     JsonObject obj = jsonArray.get(i).getAsJsonObject();
                     String seller = obj.get("seller").getAsString();
@@ -133,7 +134,7 @@ public class AuctionManager {
                     ItemStack cleanItem = AuctionEvents.cleanItemFromAH(listing.item);
                     buyer.inventory.add(cleanItem);
                     activeListings.remove(slotId);
-                    saveListings(); // Sauvegarde automatique après achat pour retirer l'item du fichier JSON
+                    saveListings();
                     buyer.closeContainer();
                 }
 
